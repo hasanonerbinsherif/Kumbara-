@@ -24,6 +24,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://kumbara:kumbara@localhost:5432/kumbara?schema=public
       AUTH_SECRET: ci-only-secret-that-is-at-least-32-characters
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: ci-only-admin-password
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +35,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm test
       - run: npx prisma migrate deploy
+      - run: npx prisma db seed
+      - run: npm test
       - run: npm run build
