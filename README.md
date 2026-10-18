@@ -32,6 +32,15 @@ Log in at `/login` with the Admin from `npm run db:seed`. Sessions are a signed,
 - Queries for user data go through `scopeFor()` in `src/lib/access.ts`: regular users see only their own accounts, transactions and receipts, Admins see everything.
 - Logins and logouts are written to the audit log.
 
+## Logging money
+
+- **Accounts** (`/accounts`): piggy banks, cash wallets, bank accounts and cards, each in one currency.
+- **New transaction** (`/transactions/new`): money in, money out, or a transfer between two of your accounts. It records who sent it, how much, in which currency, from where, to where, how and when.
+- **Transactions** (`/transactions`): newest first, filterable by date range, type, method, account and currency, with totals in and out per currency. Transfers don't change the totals.
+- **Detail** (`/transactions/<id>`): who sent how much, to where, and how, in one sentence, plus who logged it.
+
+Regular users only see and use their own accounts. Admins see everyone's and get a "Logged by" column.
+
 ## Scripts
 
 | Command | What it does |
