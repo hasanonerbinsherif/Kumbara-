@@ -8,6 +8,12 @@ export default function Home() {
       <p className="max-w-md text-lg text-pink-800/80 dark:text-pink-200/80">
         Track every coin that goes in and out, with receipts and exchange rates.
       </p>
+      <a
+        href="/login"
+        className="rounded-lg bg-pink-600 px-5 py-2 font-semibold text-white hover:bg-pink-700"
+      >
+        Log in
+      </a>
     </main>
   );
 }
