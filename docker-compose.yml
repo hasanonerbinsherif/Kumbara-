@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: kumbara
+      POSTGRES_PASSWORD: kumbara
+      POSTGRES_DB: kumbara
+    ports:
+      - "5432:5432"
+    volumes:
+      - kumbara-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kumbara"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  kumbara-db:

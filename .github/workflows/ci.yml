@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kumbara
+          POSTGRES_PASSWORD: kumbara
+          POSTGRES_DB: kumbara
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kumbara"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://kumbara:kumbara@localhost:5432/kumbara?schema=public
+      AUTH_SECRET: ci-only-secret-that-is-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx prisma migrate deploy
+      - run: npm run build
