@@ -15,6 +15,7 @@ const envSchema = z.object({
     .regex(/^[A-Z]{3}$/, "HOME_CURRENCY must be a 3-letter ISO 4217 code")
     .default("TRY"),
   RATES_API_URL: z.url().default("https://api.frankfurter.app"),
+  RECEIPTS_DIR: z.string().min(1).default("storage/receipts"),
   STORAGE_ENDPOINT: z.url().optional(),
   STORAGE_BUCKET: z.string().optional(),
   STORAGE_ACCESS_KEY_ID: z.string().optional(),

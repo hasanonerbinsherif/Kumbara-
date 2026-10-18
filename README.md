@@ -41,6 +41,16 @@ Log in at `/login` with the Admin from `npm run db:seed`. Sessions are a signed,
 
 Regular users only see and use their own accounts. Admins see everyone's and get a "Logged by" column.
 
+## Receipts
+
+On a transaction's page you can attach photos (JPEG, PNG, WebP, HEIC) or PDFs, up to 10 MB each, several at once.
+
+- The file type is checked from the file's contents, not its name, so a renamed file can't pose as a receipt.
+- The same file can't be attached twice to one transaction (matched by SHA-256).
+- Files are served from `/receipts/<id>` only to the transaction's owner and Admins; anyone else gets a 404.
+- Uploads and removals are written to the audit log.
+- Files are stored on local disk under `RECEIPTS_DIR` (default `storage/receipts`, git-ignored). Back this folder up together with the database. Storage sits behind the `FileStorage` interface in `src/lib/storage.ts`, so S3 or Cloudflare R2 can replace it later without changing anything else.
+
 ## Scripts
 
 | Command | What it does |
