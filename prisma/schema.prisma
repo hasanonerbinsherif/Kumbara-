@@ -1,4 +1,4 @@
-// Kumbara database schema. Models arrive in phase 2 (see the build plan).
+// Kumbara database schema. See the build plan for how the tables fit together.
 
 generator client {
   provider = "prisma-client"
@@ -7,4 +7,149 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Direction {
+  INCOMING
+  OUTGOING
+  TRANSFER
+}
+
+enum Method {
+  CASH
+  BANK_TRANSFER
+  CARD
+  MOBILE_PAYMENT
+  CRYPTO
+  OTHER
+}
+
+enum AccountType {
+  PIGGY_BANK
+  CASH
+  BANK
+  CARD
+  OTHER
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(USER)
+  accounts     Account[]
+  transactions Transaction[] @relation("CreatedBy")
+  receipts     Receipt[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+/// A piggy bank, wallet, bank account or card. Each holds one currency.
+model Account {
+  id        String        @id @default(cuid())
+  owner     User          @relation(fields: [ownerId], references: [id])
+  ownerId   String
+  name      String
+  type      AccountType
+  /// ISO 4217 code, e.g. USD, TRY
+  currency  String        @db.Char(3)
+  outgoing  Transaction[] @relation("FromAccount")
+  incoming  Transaction[] @relation("ToAccount")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([ownerId])
+}
+
+/// One movement of money: who sent how much, from where, to where, and how.
+model Transaction {
+  id            String    @id @default(cuid())
+  direction     Direction
+  /// Exact decimal, never a float
+  amount        Decimal   @db.Decimal(18, 4)
+  currency      String    @db.Char(3)
+  /// Who sent it, even if they are not a user of the app
+  senderName    String
+  /// Who received it, when they are outside the app
+  recipientName String?
+  fromAccount   Account?  @relation("FromAccount", fields: [fromAccountId], references: [id])
+  fromAccountId String?
+  toAccount     Account?  @relation("ToAccount", fields: [toAccountId], references: [id])
+  toAccountId   String?
+  method        Method
+  note          String?
+  /// When the money actually moved
+  occurredAt    DateTime
+  createdBy     User      @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById   String
+  receipts      Receipt[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  /// Soft delete: the row stays for the audit trail
+  deletedAt     DateTime?
+
+  @@index([occurredAt])
+  @@index([createdById])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+}
+
+/// One uploaded file (photo or PDF) proving a transaction.
+model Receipt {
+  id            String      @id @default(cuid())
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  transactionId String
+  /// Path in S3/R2, or on local disk in development
+  storageKey    String      @unique
+  fileName      String
+  mimeType      String
+  sizeBytes     Int
+  /// Detects the same file uploaded twice
+  sha256        String      @db.Char(64)
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
+  uploadedById  String
+  uploadedAt    DateTime    @default(now())
+
+  @@index([transactionId])
+  @@index([sha256])
+}
+
+/// One rate per currency pair per day: 1 base = rate quote.
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  base      String   @db.Char(3)
+  quote     String   @db.Char(3)
+  rate      Decimal  @db.Decimal(20, 10)
+  date      DateTime @db.Date
+  /// e.g. "ECB/Frankfurter"
+  source    String
+  fetchedAt DateTime @default(now())
+
+  @@unique([base, quote, date, source])
+  @@index([quote, date])
+}
+
+/// Who changed what and when, with the values before and after.
+model AuditLog {
+  id       String   @id @default(cuid())
+  actor    User     @relation(fields: [actorId], references: [id])
+  actorId  String
+  /// CREATE, UPDATE, DELETE, LOGIN
+  action   String
+  /// "Transaction", "Receipt", ...
+  entity   String
+  entityId String
+  before   Json?
+  after    Json?
+  at       DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId])
 }

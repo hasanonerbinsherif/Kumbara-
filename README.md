@@ -16,6 +16,7 @@ cp .env.example .env          # then fill in AUTH_SECRET (openssl rand -base64 3
 docker compose up -d db       # or point DATABASE_URL at your own Postgres
 npm install                   # also generates the Prisma client
 npm run db:migrate            # apply migrations
+npm run db:seed               # create the first Admin from ADMIN_EMAIL / ADMIN_PASSWORD
 npm run dev                   # http://localhost:3000
 ```
 
@@ -29,11 +30,25 @@ npm run dev                   # http://localhost:3000
 | `npm run build` / `npm start` | Production build and server |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, including generated route types |
-| `npm test` | Unit tests (Vitest) |
+| `npm test` | Unit tests, plus database tests when `DATABASE_URL` points at a migrated Postgres |
 | `npm run db:migrate` | Create and apply a migration in development |
 | `npm run db:deploy` | Apply migrations in production or CI |
+| `npm run db:seed` | Create the first Admin (safe to re-run; never resets a password) |
 | `npm run db:studio` | Browse the database |
 
 ## Environment variables
 
 See [`.env.example`](.env.example). `DATABASE_URL` and `AUTH_SECRET` are required; the app validates all variables at startup and lists every problem at once.
+
+## Data model
+
+| Table | Holds |
+| --- | --- |
+| `User` | People who log in, with role `ADMIN` or `USER` |
+| `Account` | A piggy bank, wallet, bank account or card, in one currency |
+| `Transaction` | Who sent how much, in which currency, from where, to where, how and when |
+| `Receipt` | Uploaded photos or PDFs proving a transaction |
+| `ExchangeRate` | One rate per currency pair per day |
+| `AuditLog` | Who changed what and when |
+
+The database also refuses zero or negative amounts and rates, and currency codes that aren't three capital letters.
