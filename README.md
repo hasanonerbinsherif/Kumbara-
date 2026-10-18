@@ -22,6 +22,16 @@ npm run dev                   # http://localhost:3000
 
 `GET /api/health` reports whether the app can reach the database.
 
+## Logging in and roles
+
+Log in at `/login` with the Admin from `npm run db:seed`. Sessions are a signed, HTTP-only cookie (HS256 with `AUTH_SECRET`) that lasts 7 days.
+
+- Logged-out visitors are sent to `/login`, then back to the page they asked for.
+- Only Admins can open `/admin`; other users are sent to `/dashboard`.
+- Every page re-checks the user against the database, so a deleted or demoted user loses access at once.
+- Queries for user data go through `scopeFor()` in `src/lib/access.ts`: regular users see only their own accounts, transactions and receipts, Admins see everything.
+- Logins and logouts are written to the audit log.
+
 ## Scripts
 
 | Command | What it does |
