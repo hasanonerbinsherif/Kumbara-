@@ -15,7 +15,9 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "rates:sync": "tsx scripts/rates.ts sync",
+    "rates:backfill": "tsx scripts/rates.ts backfill"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

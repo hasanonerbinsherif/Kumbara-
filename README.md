@@ -51,6 +51,17 @@ On a transaction's page you can attach photos (JPEG, PNG, WebP, HEIC) or PDFs, u
 - Uploads and removals are written to the audit log.
 - Files are stored on local disk under `RECEIPTS_DIR` (default `storage/receipts`, git-ignored). Back this folder up together with the database. Storage sits behind the `FileStorage` interface in `src/lib/storage.ts`, so S3 or Cloudflare R2 can replace it later without changing anything else.
 
+## Exchange rates
+
+Rates are fetched once a day from the European Central Bank (via [Frankfurter](https://frankfurter.dev), no key needed) and stored against `BASE_CURRENCY` (USD). Every "then vs today" question is then answered from the database.
+
+- **First run:** `npm run rates:backfill -- 2025-01-01` fetches every day from that date to today. Safe to re-run; days already stored are skipped.
+- **Every day:** call `GET /api/cron/rates` with `Authorization: Bearer $CRON_SECRET` (for example from a hosting provider's cron), or run `npm run rates:sync`. Either one fills in everything since the last stored day.
+- **Weekends and holidays:** the ECB publishes on business days only, so a lookup uses the latest rate on or before the day asked, up to 7 days back.
+- **Any pair:** EUR to TRY is worked out through USD, so no extra rates are needed.
+- **Where it shows:** the dashboard's "Then vs today" card (an amount on a past day vs today, plus a 90-day chart), a "Worth today" column on the transactions list (in `HOME_CURRENCY`, or `BASE_CURRENCY` for amounts already in the home currency), and "Worth then / today" on each transaction.
+- The ECB covers about 30 major currencies. Others (for example ARS) show "—" where no rate exists.
+
 ## Scripts
 
 | Command | What it does |
@@ -64,6 +75,8 @@ On a transaction's page you can attach photos (JPEG, PNG, WebP, HEIC) or PDFs, u
 | `npm run db:deploy` | Apply migrations in production or CI |
 | `npm run db:seed` | Create the first Admin (safe to re-run; never resets a password) |
 | `npm run db:studio` | Browse the database |
+| `npm run rates:sync` | Fetch exchange rates since the last stored day |
+| `npm run rates:backfill -- <from> [<to>]` | Fetch exchange rates for a date range |
 
 ## Environment variables
 

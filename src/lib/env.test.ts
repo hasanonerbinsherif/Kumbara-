@@ -14,6 +14,13 @@ describe("parseEnv", () => {
     expect(env.RATES_API_URL).toBe("https://api.frankfurter.app");
   });
 
+  it("treats empty values from .env.example as not set", () => {
+    const env = parseEnv({ ...valid, HOME_CURRENCY: "", STORAGE_ENDPOINT: "", CRON_SECRET: "" });
+    expect(env.HOME_CURRENCY).toBe("TRY");
+    expect(env.STORAGE_ENDPOINT).toBeUndefined();
+    expect(env.CRON_SECRET).toBeUndefined();
+  });
+
   it("rejects a non-Postgres DATABASE_URL", () => {
     expect(() => parseEnv({ ...valid, DATABASE_URL: "mysql://localhost/db" })).toThrow(
       /DATABASE_URL/,

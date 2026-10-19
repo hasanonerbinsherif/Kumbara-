@@ -4,10 +4,12 @@ import { AppNav } from "@/components/app-nav";
 import { buttonClass } from "@/components/form";
 import { db } from "@/lib/db";
 import { viewerScope } from "@/lib/dal";
+import { env } from "@/lib/env";
+import { Converter } from "./converter";
 
 export const metadata = { title: "Dashboard · Kumbara" };
 
-async function Overview() {
+async function Overview({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
   const { user, scope } = await viewerScope();
   const [accounts, transactions] = await Promise.all([
     db.account.count({ where: scope.accounts }),
@@ -32,6 +34,7 @@ async function Overview() {
         <Stat label="Accounts" value={accounts} href="/accounts" />
         <Stat label="Transactions" value={transactions} href="/transactions" />
       </dl>
+      <Converter params={await searchParams} base={env().BASE_CURRENCY} home={env().HOME_CURRENCY} />
     </>
   );
 }
@@ -45,11 +48,11 @@ function Stat({ label, value, href }: { label: string; value: number; href: stri
   );
 }
 
-export default function DashboardPage() {
+export default function DashboardPage(props: PageProps<"/dashboard">) {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8">
       <Suspense fallback={<p className="text-pink-800/70">Loading…</p>}>
-        <Overview />
+        <Overview searchParams={props.searchParams} />
       </Suspense>
     </main>
   );
