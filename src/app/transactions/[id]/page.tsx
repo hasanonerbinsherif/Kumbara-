@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { ACCOUNT_TYPE_LABELS, DIRECTION_LABELS, METHOD_LABELS } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
 import { getTransaction } from "@/lib/transactions";
+import { Receipts } from "./receipts";
 
 export const metadata = { title: "Transaction · Kumbara" };
 
@@ -55,18 +56,7 @@ async function Detail({ params }: { params: PageProps<"/transactions/[id]">["par
           </div>
         ))}
       </dl>
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold text-pink-900 dark:text-pink-100">Receipts</h2>
-        {tx.receipts.length === 0 ? (
-          <p className="text-sm text-pink-800/70 dark:text-pink-200/70">No receipts yet. Uploading receipts comes in the next phase.</p>
-        ) : (
-          <ul className="text-sm">
-            {tx.receipts.map((r) => (
-              <li key={r.id}>{r.fileName}</li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Receipts transactionId={tx.id} receipts={tx.receipts} />
     </>
   );
 }

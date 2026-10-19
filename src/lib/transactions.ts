@@ -174,7 +174,10 @@ export function getTransaction(db: PrismaClient, viewer: Viewer, id: string) {
       fromAccount: { include: { owner: { select: { name: true } } } },
       toAccount: { include: { owner: { select: { name: true } } } },
       createdBy: { select: { name: true, email: true } },
-      receipts: { orderBy: { uploadedAt: "asc" } },
+      receipts: {
+        select: { id: true, fileName: true, mimeType: true, sizeBytes: true, uploadedAt: true },
+        orderBy: { uploadedAt: "asc" },
+      },
     },
   });
 }
