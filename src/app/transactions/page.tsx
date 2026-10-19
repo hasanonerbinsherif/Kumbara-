@@ -2,11 +2,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
 import { buttonClass, inputClass } from "@/components/form";
+import { WorthCell } from "@/components/worth";
 import { listAccounts } from "@/lib/accounts";
 import { currentUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { DIRECTION_LABELS, DIRECTIONS, METHOD_LABELS, METHODS } from "@/lib/labels";
+import { env } from "@/lib/env";
 import { formatMoney } from "@/lib/money";
+import { worthOf } from "@/lib/rates";
 import { listTransactions, parseFilters } from "@/lib/transactions";
 
 export const metadata = { title: "Transactions · Kumbara" };
@@ -20,6 +23,8 @@ async function Transactions({ searchParams }: { searchParams: PageProps<"/transa
     listTransactions(db, user, filters),
     listAccounts(db, user),
   ]);
+  const { BASE_CURRENCY, HOME_CURRENCY } = env();
+  const worths = await worthOf(db, { base: BASE_CURRENCY, home: HOME_CURRENCY }, rows);
   const isAdmin = user.role === "ADMIN";
   const filtered = Object.values(filters).some(Boolean);
 
@@ -122,19 +127,22 @@ async function Transactions({ searchParams }: { searchParams: PageProps<"/transa
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-pink-200 bg-white dark:border-pink-900 dark:bg-zinc-900">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="text-pink-800/70 dark:text-pink-200/70">
               <tr>
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Who sent</th>
                 <th className="px-4 py-2 text-right font-medium">Amount</th>
+                <th className="px-4 py-2 text-right font-medium" title="What the amount is worth at today's rate, and the change since that day">
+                  Worth today
+                </th>
                 <th className="px-4 py-2 font-medium">From → To</th>
                 <th className="px-4 py-2 font-medium">How</th>
                 {isAdmin && <th className="px-4 py-2 font-medium">Logged by</th>}
               </tr>
             </thead>
             <tbody className="text-zinc-900 dark:text-zinc-100">
-              {rows.map((t) => {
+              {rows.map((t, i) => {
                 const sign = t.direction === "INCOMING" ? "+" : t.direction === "OUTGOING" ? "−" : "";
                 const tone =
                   t.direction === "INCOMING"
@@ -153,6 +161,9 @@ async function Transactions({ searchParams }: { searchParams: PageProps<"/transa
                     <td className={`px-4 py-2 text-right font-medium whitespace-nowrap ${tone}`}>
                       {sign}
                       {formatMoney(t.amount, t.currency)}
+                    </td>
+                    <td className="px-4 py-2 text-right whitespace-nowrap">
+                      <WorthCell worth={worths[i]} />
                     </td>
                     <td className="px-4 py-2">
                       {t.fromAccount?.name ?? t.senderName} → {t.toAccount?.name ?? t.recipientName ?? "outside"}
