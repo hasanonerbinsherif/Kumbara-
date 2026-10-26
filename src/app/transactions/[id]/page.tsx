@@ -5,7 +5,10 @@ import { AppNav } from "@/components/app-nav";
 import { currentUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { ACCOUNT_TYPE_LABELS, DIRECTION_LABELS, METHOD_LABELS } from "@/lib/labels";
+import { formatChange } from "@/components/worth";
+import { env } from "@/lib/env";
 import { formatMoney } from "@/lib/money";
+import { worthOf } from "@/lib/rates";
 import { getTransaction } from "@/lib/transactions";
 import { Receipts } from "./receipts";
 
@@ -23,6 +26,9 @@ async function Detail({ params }: { params: PageProps<"/transactions/[id]">["par
   const tx = await getTransaction(db, user, id);
   if (!tx) notFound();
 
+  const { BASE_CURRENCY, HOME_CURRENCY } = env();
+  const [worth] = await worthOf(db, { base: BASE_CURRENCY, home: HOME_CURRENCY }, [tx]);
+
   const from = accountLabel(tx.fromAccount) ?? tx.senderName;
   const to = accountLabel(tx.toAccount) ?? tx.recipientName ?? "Someone outside the app";
   const rows: [string, React.ReactNode][] = [
@@ -31,6 +37,15 @@ async function Detail({ params }: { params: PageProps<"/transactions/[id]">["par
     ["To", to],
     ["How", METHOD_LABELS[tx.method]],
     ["When", tx.occurredAt.toISOString().slice(0, 10)],
+    ...(worth
+      ? ([
+          ["Worth then", `${formatMoney(worth.then.value, worth.currency)} (rate of ${worth.then.rateDate})`],
+          [
+            "Worth today",
+            `${formatMoney(worth.now.value, worth.currency)} (${formatChange(worth.change)} since then, rate of ${worth.now.rateDate})`,
+          ],
+        ] as [string, string][])
+      : []),
     ["Note", tx.note ?? "—"],
     ["Logged by", `${tx.createdBy.name} on ${tx.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC`],
   ];
