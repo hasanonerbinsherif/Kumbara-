@@ -161,6 +161,7 @@ export class RateBook {
 
   /** Converts through the base currency, so any pair works from one set of rates. */
   convert(amount: Prisma.Decimal | number | string, from: string, to: string, date: string): Conversion | null {
+    if (from === to) return { value: new Prisma.Decimal(amount), rate: new Prisma.Decimal(1), rateDate: date };
     const a = this.rateOn(from, date);
     const b = this.rateOn(to, date);
     if (!a || !b) return null;

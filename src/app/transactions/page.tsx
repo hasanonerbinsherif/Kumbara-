@@ -19,9 +19,12 @@ const day = (d: Date) => d.toISOString().slice(0, 10);
 async function Transactions({ searchParams }: { searchParams: PageProps<"/transactions">["searchParams"] }) {
   const user = await currentUser();
   const filters = parseFilters(await searchParams);
-  const [{ rows, totals }, accounts] = await Promise.all([
+  const [{ rows, totals }, accounts, people] = await Promise.all([
     listTransactions(db, user, filters),
     listAccounts(db, user),
+    user.role === "ADMIN"
+      ? db.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+      : Promise.resolve([]),
   ]);
   const { BASE_CURRENCY, HOME_CURRENCY } = env();
   const worths = await worthOf(db, { base: BASE_CURRENCY, home: HOME_CURRENCY }, rows);
@@ -85,6 +88,19 @@ async function Transactions({ searchParams }: { searchParams: PageProps<"/transa
           Currency
           <input name="currency" maxLength={3} defaultValue={filters.currency ?? ""} placeholder="Any" className={`${inputClass} uppercase placeholder:normal-case`} />
         </label>
+        {isAdmin && (
+          <label className="flex flex-col gap-1 text-pink-950 dark:text-pink-100">
+            Logged by
+            <select name="userId" defaultValue={filters.userId ?? ""} className={inputClass}>
+              <option value="">Anyone</option>
+              {people.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="col-span-2 flex gap-3 sm:col-span-3 lg:col-span-6">
           <button type="submit" className={buttonClass}>
             Filter
