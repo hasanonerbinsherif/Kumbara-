@@ -14,3 +14,17 @@ const CURRENCY_CODES = new Set(Intl.supportedValuesOf("currency"));
 export function isCurrencyCode(code: string): boolean {
   return CURRENCY_CODES.has(code);
 }
+
+/** "$" for USD, "₺" for TRY; the code itself where there is no short symbol. */
+export function currencySymbol(currency: string, locale = "en-US") {
+  try {
+    const parts = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+    }).formatToParts(0);
+    return parts.find((p) => p.type === "currency")?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}

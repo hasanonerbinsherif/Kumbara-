@@ -24,3 +24,49 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Piggy bank: the fill rises when the page loads, coins drop after a deposit. */
+.piggy-fill {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: piggy-rise 900ms ease-out both;
+}
+
+@keyframes piggy-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.coin {
+  opacity: 0;
+  animation: coin-drop 900ms ease-in forwards;
+}
+
+@keyframes coin-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) rotateY(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(20px) rotateY(540deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(36px) rotateY(720deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piggy-fill,
+  .coin {
+    animation: none;
+  }
+  .coin {
+    display: none;
+  }
+}

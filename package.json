@@ -17,7 +17,8 @@
     "postinstall": "prisma generate",
     "db:seed": "prisma db seed",
     "rates:sync": "tsx scripts/rates.ts sync",
-    "rates:backfill": "tsx scripts/rates.ts backfill"
+    "rates:backfill": "tsx scripts/rates.ts backfill",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
@@ -32,6 +33,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^22.20.5",
     "@types/pg": "^8.23.1",

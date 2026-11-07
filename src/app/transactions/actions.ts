@@ -46,5 +46,5 @@ export async function addTransaction(
     if (error instanceof AccessError) return { formError: "That account isn't one of yours.", values, at: Date.now() };
     throw error;
   }
-  redirect(`/transactions/${id}`);
+  redirect(`/transactions/${id}?added=1`);
 }
