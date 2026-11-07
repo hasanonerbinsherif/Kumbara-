@@ -95,6 +95,8 @@ export const transactionFilters = z.object({
     .optional()
     .catch(undefined),
   accountId: z.string().min(1).optional().catch(undefined),
+  /** Who logged it. Only narrows an Admin's view; a regular user only ever sees their own. */
+  userId: z.string().min(1).optional().catch(undefined),
 });
 
 export type TransactionFilters = z.infer<typeof transactionFilters>;
@@ -117,6 +119,7 @@ function whereFor(viewer: Viewer, f: TransactionFilters): Prisma.TransactionWher
       f.direction ? { direction: f.direction } : {},
       f.method ? { method: f.method } : {},
       f.currency ? { currency: f.currency } : {},
+      f.userId ? { createdById: f.userId } : {},
       f.accountId ? { OR: [{ fromAccountId: f.accountId }, { toAccountId: f.accountId }] } : {},
     ],
   };

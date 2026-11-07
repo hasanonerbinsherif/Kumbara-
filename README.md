@@ -51,6 +51,18 @@ On a transaction's page you can attach photos (JPEG, PNG, WebP, HEIC) or PDFs, u
 - Uploads and removals are written to the audit log.
 - Files are stored on local disk under `RECEIPTS_DIR` (default `storage/receipts`, git-ignored). Back this folder up together with the database. Storage sits behind the `FileStorage` interface in `src/lib/storage.ts`, so S3 or Cloudflare R2 can replace it later without changing anything else.
 
+## Admin area
+
+Admins get an **Admin** link in the top bar (`/admin`):
+
+- **Overview:** how many users, accounts, transactions and receipts exist, whether exchange rates are up to date, and the latest activity.
+- **Users** (`/admin/users`): add people (there is no public sign-up), make someone an Admin or a regular user, and set a new password for someone who forgot theirs. You can't change your own role, and the last Admin can't be demoted. Changing a password doesn't sign out sessions that are already open.
+- **Receipts** (`/admin/receipts`): every uploaded receipt, newest first, with its transaction.
+- **Audit log** (`/admin/audit`): every login, logout, export and change to accounts, transactions, receipts and users, filterable by person, action and record. Passwords are never logged.
+- **Export** (`/admin/export`): every transaction as a CSV file, with its value in a currency you pick on the day it happened and today. Text that a spreadsheet would run as a formula is prefixed with `'`.
+
+Admins also see everyone's accounts and transactions on the normal pages, and can filter transactions by who logged them.
+
 ## Exchange rates
 
 Rates are fetched once a day from the European Central Bank (via [Frankfurter](https://frankfurter.dev), no key needed) and stored against `BASE_CURRENCY` (USD). Every "then vs today" question is then answered from the database.
