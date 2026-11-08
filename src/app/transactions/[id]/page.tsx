@@ -5,9 +5,10 @@ import { AppNav } from "@/components/app-nav";
 import { currentUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { ACCOUNT_TYPE_LABELS, DIRECTION_LABELS, METHOD_LABELS } from "@/lib/labels";
+import { CoinDrop } from "@/components/piggy";
 import { formatChange } from "@/components/worth";
 import { env } from "@/lib/env";
-import { formatMoney } from "@/lib/money";
+import { currencySymbol, formatMoney } from "@/lib/money";
 import { worthOf } from "@/lib/rates";
 import { getTransaction } from "@/lib/transactions";
 import { Receipts } from "./receipts";
@@ -20,7 +21,13 @@ function accountLabel(account: Acc) {
   return account ? `${account.name} (${ACCOUNT_TYPE_LABELS[account.type]}, ${account.owner.name})` : null;
 }
 
-async function Detail({ params }: { params: PageProps<"/transactions/[id]">["params"] }) {
+async function Detail({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/transactions/[id]">["params"];
+  searchParams: PageProps<"/transactions/[id]">["searchParams"];
+}) {
   const user = await currentUser();
   const { id } = await params;
   const tx = await getTransaction(db, user, id);
@@ -56,6 +63,15 @@ async function Detail({ params }: { params: PageProps<"/transactions/[id]">["par
       <Link href="/transactions" className="text-sm font-medium text-pink-700 underline dark:text-pink-300">
         ← All transactions
       </Link>
+      {(await searchParams).added && tx.direction === "INCOMING" && (
+        <div
+          role="status"
+          className="flex items-center gap-3 rounded-xl border border-pink-200 bg-pink-50 px-4 py-2 text-sm font-medium text-pink-800 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-200"
+        >
+          <CoinDrop symbol={currencySymbol(tx.currency)} />
+          Into the piggy bank!
+        </div>
+      )}
       <header className="flex flex-col gap-1">
         <p className="text-sm font-medium text-pink-800/70 dark:text-pink-200/70">{DIRECTION_LABELS[tx.direction]}</p>
         <h1 className="text-4xl font-semibold text-pink-900 dark:text-pink-100">{formatMoney(tx.amount, tx.currency)}</h1>
@@ -80,7 +96,7 @@ export default function TransactionPage(props: PageProps<"/transactions/[id]">) 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-8">
       <Suspense fallback={<p className="text-pink-800/70">Loading…</p>}>
-        <Detail params={props.params} />
+        <Detail params={props.params} searchParams={props.searchParams} />
       </Suspense>
     </main>
   );

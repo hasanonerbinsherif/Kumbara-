@@ -34,6 +34,7 @@ Log in at `/login` with the Admin from `npm run db:seed`. Sessions are a signed,
 
 ## Logging money
 
+- **Dashboard** (`/dashboard`): a piggy bank that fills with the share of incoming money you've kept, and your balance in `HOME_CURRENCY` at today's rates. Logging money in drops coins into the slot (turned off when your device asks for reduced motion).
 - **Accounts** (`/accounts`): piggy banks, cash wallets, bank accounts and cards, each in one currency.
 - **New transaction** (`/transactions/new`): money in, money out, or a transfer between two of your accounts. It records who sent it, how much, in which currency, from where, to where, how and when.
 - **Transactions** (`/transactions`): newest first, filterable by date range, type, method, account and currency, with totals in and out per currency. Transfers don't change the totals.
@@ -83,12 +84,43 @@ Rates are fetched once a day from the European Central Bank (via [Frankfurter](h
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, including generated route types |
 | `npm test` | Unit tests, plus database tests when `DATABASE_URL` points at a migrated Postgres |
+| `npm run test:e2e` | Browser tests (Playwright) against a production build; run `npm run build` and `npm run db:seed` first |
 | `npm run db:migrate` | Create and apply a migration in development |
 | `npm run db:deploy` | Apply migrations in production or CI |
 | `npm run db:seed` | Create the first Admin (safe to re-run; never resets a password) |
 | `npm run db:studio` | Browse the database |
 | `npm run rates:sync` | Fetch exchange rates since the last stored day |
 | `npm run rates:backfill -- <from> [<to>]` | Fetch exchange rates for a date range |
+
+## Deploying (VPS + Docker)
+
+Everything runs on one server with Docker: the app, Postgres, [Caddy](https://caddyserver.com) for HTTPS, and a small `jobs` container that fetches exchange rates and makes backups every day. The stack is in [`deploy/compose.yml`](deploy/compose.yml).
+
+1. **Server:** any Linux VPS with Docker and 2 GB of memory. Point your domain's DNS (an `A` record) at it and open ports 80 and 443.
+2. **Settings:** clone the repo and copy `.env.example` to `.env`. Fill in `AUTH_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CRON_SECRET`, plus the deploy settings at the end: `DOMAIN` and `POSTGRES_PASSWORD`. `DATABASE_URL` and `RECEIPTS_DIR` are set by the stack, so leave them as they are.
+3. **Start:** `docker compose -f deploy/compose.yml --env-file .env up -d --build`. The app applies database migrations each time it starts, and Caddy gets a certificate for `DOMAIN`.
+4. **First Admin and rates:** `docker compose -f deploy/compose.yml --env-file .env exec app npm run db:seed`, then `... exec app npm run rates:backfill -- 2025-01-01`.
+5. **Updates:** `git pull`, then the same `up -d --build` command.
+
+**Daily jobs** (set the times in `.env` as cron lines, in `TZ`):
+
+- `RATES_AT` (default `0 17 * * *`): calls `/api/cron/rates`, after the ECB publishes.
+- `BACKUP_AT` (default `30 2 * * *`): writes `db-<date>.dump` (a `pg_dump`) and `receipts-<date>.tar.gz` to `BACKUP_DIR` (default `deploy/backups`), and deletes copies older than `BACKUP_KEEP_DAYS` (default 14).
+- See them run: `docker compose -f deploy/compose.yml logs jobs`.
+
+Backups on the same server don't survive losing the server, so copy `BACKUP_DIR` somewhere else regularly (for example with `rclone` or your VPS provider's snapshots).
+
+**Restoring** a backup into the running stack:
+
+```sh
+C="docker compose -f deploy/compose.yml --env-file .env"
+$C stop app
+$C exec -T db dropdb -U kumbara kumbara && $C exec -T db createdb -U kumbara kumbara
+$C exec -T db pg_restore -U kumbara -d kumbara --no-owner < deploy/backups/db-<date>.dump
+$C run --rm --no-deps -v "$PWD/deploy/backups:/backups:ro" --user root app \
+  sh -c 'rm -rf /data/receipts/* && tar -xzf /backups/receipts-<date>.tar.gz -C /data && chown -R node:node /data/receipts'
+$C start app
+```
 
 ## Environment variables
 

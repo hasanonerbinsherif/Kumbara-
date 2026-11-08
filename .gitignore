@@ -48,3 +48,10 @@ next-env.d.ts
 
 # uploaded receipts (local disk storage)
 /storage/
+
+# Playwright
+/test-results/
+/playwright-report/
+
+# Local backups from deploy/compose.yml
+/deploy/backups/

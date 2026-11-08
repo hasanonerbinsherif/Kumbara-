@@ -4,17 +4,23 @@ import { AppNav } from "@/components/app-nav";
 import { buttonClass } from "@/components/form";
 import { db } from "@/lib/db";
 import { viewerScope } from "@/lib/dal";
+import { Piggy } from "@/components/piggy";
+import { piggyBalance } from "@/lib/balance";
 import { env } from "@/lib/env";
+import { formatMoney } from "@/lib/money";
 import { Converter } from "./converter";
 
 export const metadata = { title: "Dashboard · Kumbara" };
 
 async function Overview({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
   const { user, scope } = await viewerScope();
-  const [accounts, transactions] = await Promise.all([
+  const { BASE_CURRENCY, HOME_CURRENCY } = env();
+  const [accounts, transactions, piggy] = await Promise.all([
     db.account.count({ where: scope.accounts }),
     db.transaction.count({ where: { AND: [scope.transactions, { deletedAt: null }] } }),
+    piggyBalance(db, user, { base: BASE_CURRENCY, home: HOME_CURRENCY }),
   ]);
+  const keptPct = Math.round(piggy.kept * 100);
 
   return (
     <>
@@ -30,11 +36,32 @@ async function Overview({ searchParams }: { searchParams: PageProps<"/dashboard"
           New transaction
         </Link>
       </header>
+      <section className="flex flex-col items-center gap-6 rounded-xl border border-pink-200 bg-white p-6 sm:flex-row dark:border-pink-900 dark:bg-zinc-900">
+        <Piggy fill={piggy.kept} label={`Piggy bank ${keptPct}% full`} />
+        <div className="flex flex-col gap-1 text-center sm:text-left">
+          <p className="text-sm text-pink-800/70 dark:text-pink-200/70">
+            {user.role === "ADMIN" ? "Saved across everyone's accounts" : "Saved in your accounts"}, at today&apos;s rates
+          </p>
+          <p className="text-4xl font-semibold text-pink-900 dark:text-pink-100">
+            {formatMoney(piggy.balance, piggy.currency)}
+          </p>
+          <p className="text-sm text-pink-800/80 dark:text-pink-200/80">
+            {piggy.received.isZero()
+              ? "Log money coming in and watch the piggy fill up."
+              : `You've kept ${keptPct}% of the ${formatMoney(piggy.received, piggy.currency)} that came in.`}
+          </p>
+          {piggy.missing.length > 0 && (
+            <p className="text-xs text-pink-800/60 dark:text-pink-200/60">
+              Not counted (no exchange rate): {piggy.missing.join(", ")}
+            </p>
+          )}
+        </div>
+      </section>
       <dl className="grid grid-cols-2 gap-4">
         <Stat label="Accounts" value={accounts} href="/accounts" />
         <Stat label="Transactions" value={transactions} href="/transactions" />
       </dl>
-      <Converter params={await searchParams} base={env().BASE_CURRENCY} home={env().HOME_CURRENCY} />
+      <Converter params={await searchParams} base={BASE_CURRENCY} home={HOME_CURRENCY} />
     </>
   );
 }
